@@ -28,7 +28,8 @@ export const bookingAPI = {
     startTime: string,
     endTime: string
   ) => {
-    const pricing = getCurrentMonthPricing();
+    const month = date.slice(0, 7);
+    const pricing = pricingAPI.getMonthPricing(month);
     const cost = calculateBookingCost(roomId, startTime, endTime, pricing);
 
     const newBooking: Booking = {

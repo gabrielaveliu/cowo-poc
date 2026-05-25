@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Booking, Room } from '@/types';
 import { ROOMS } from '@/lib/mockData';
 import { Button } from '@/components/ui/button';
@@ -15,9 +15,8 @@ import {
 } from '@/components/ui/select';
 import {
   calculateBookingCost,
+  getMonthFromDate,
   isTimeSlotAvailable,
-  getAvailableMonths,
-  getCurrentMonthPricing,
 } from '@/lib/utils';
 import { apiClient } from '@/lib/api';
 
@@ -31,7 +30,7 @@ export default function BookingForm({
   onBookingCreated,
 }: BookingFormProps) {
   const [selectedRoom, setSelectedRoom] = useState<string>('room-1');
-  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [startTime, setStartTime] = useState<string>('09:00');
   const [endTime, setEndTime] = useState<string>('10:00');
   const [loading, setLoading] = useState(false);
@@ -39,20 +38,31 @@ export default function BookingForm({
     type: 'success' | 'error';
     text: string;
   } | null>(null);
-  const [estimatedCost, setEstimatedCost] = useState<number>(0);
+  const [pricing, setPricing] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    // Set default date to today
-    const today = new Date().toISOString().split('T')[0];
-    setSelectedDate(today);
-  }, []);
+    if (!selectedDate) {
+      return;
+    }
 
-  useEffect(() => {
-    // Calculate estimated cost
-    const pricing = getCurrentMonthPricing();
-    const cost = calculateBookingCost(selectedRoom, startTime, endTime, pricing);
-    setEstimatedCost(cost);
-  }, [selectedRoom, startTime, endTime]);
+    const month = getMonthFromDate(selectedDate);
+
+    const loadPricing = async () => {
+      try {
+        const data = await apiClient.getPricing(month);
+        setPricing(data);
+      } catch (error) {
+        console.error('Error fetching pricing:', error);
+        setPricing({});
+      }
+    };
+
+    loadPricing();
+  }, [selectedDate]);
+
+  const estimatedCost = useMemo(() => {
+    return calculateBookingCost(selectedRoom, startTime, endTime, pricing);
+  }, [selectedRoom, startTime, endTime, pricing]);
 
   const getMaxDate = (): string => {
     const maxDate = new Date();

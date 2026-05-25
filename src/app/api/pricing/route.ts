@@ -45,3 +45,32 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { month, pricing, roomId, hourlyPrice } = body;
+
+    if (!month || (!pricing && (!roomId || hourlyPrice === undefined))) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+
+    if (pricing) {
+      for (const [id, price] of Object.entries(pricing)) {
+        pricingAPI.updateRoomPricing(id, month, price as number);
+      }
+    } else {
+      pricingAPI.updateRoomPricing(roomId, month, hourlyPrice as number);
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Failed to update pricing' },
+      { status: 500 }
+    );
+  }
+}

@@ -41,4 +41,28 @@ router.post('/', (req: Request, res: Response) => {
   }
 });
 
+// PATCH /api/pricing - Partially update pricing for a month
+router.patch('/', (req: Request, res: Response) => {
+  try {
+    const { month, pricing, roomId, hourlyPrice } = req.body;
+
+    if (!month || (!pricing && (!roomId || hourlyPrice === undefined))) {
+      res.status(400).json({ error: 'Missing required fields' });
+      return;
+    }
+
+    if (pricing) {
+      for (const [id, price] of Object.entries(pricing)) {
+        pricingAPI.updateRoomPricing(id, month, price as number);
+      }
+    } else {
+      pricingAPI.updateRoomPricing(roomId, month, hourlyPrice as number);
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update pricing' });
+  }
+});
+
 export default router;

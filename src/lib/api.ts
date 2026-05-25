@@ -75,12 +75,26 @@ export const apiClient = {
 
   updatePricing: async (month: string, pricing: Record<string, number>) => {
     try {
-      const response = await fetch(`${API_URL}/api/pricing`, {
-        method: 'POST',
+      const patchResponse = await fetch(`${API_URL}/api/pricing`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ month, pricing }),
       });
-      return await handleResponse(response);
+
+      if (patchResponse.ok) {
+        return await handleResponse(patchResponse);
+      }
+
+      if (patchResponse.status === 404 || patchResponse.status === 405) {
+        const postResponse = await fetch(`${API_URL}/api/pricing`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ month, pricing }),
+        });
+        return await handleResponse(postResponse);
+      }
+
+      return await handleResponse(patchResponse);
     } catch (error) {
       console.error('[API] updatePricing error:', error);
       throw error;

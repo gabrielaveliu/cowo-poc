@@ -33,6 +33,11 @@ export const getCurrentMonthPricing = (): Record<string, number> => {
   return mockPricing[month] || DEFAULT_PRICING;
 }
 
+// Get month string (YYYY-MM) from a date string
+export const getMonthFromDate = (date: string): string => {
+  return date.slice(0, 7);
+}
+
 // Calculate booking cost
 export const calculateBookingCost = (
   roomId: string,
