@@ -28,7 +28,7 @@ export default function Home() {
             <div className="bg-blue-50 border-b border-blue-200 px-4 py-3 max-w-7xl mx-auto">
               <div className="flex items-center gap-3">
                 <label className="text-sm font-semibold text-blue-900">
-                  Accedi come:
+                  Utente
                 </label>
                 <select
                   value={currentUserId}

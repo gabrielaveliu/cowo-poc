@@ -70,11 +70,13 @@ export default function AdminBookingOverview() {
       <div className="grid md:grid-cols-2 gap-6 mb-8">
         <div className="space-y-2">
           <Label htmlFor="room-filter" className="text-slate-700 font-semibold">
-            Filtra per Sala
+            Sala
           </Label>
           <Select value={filterRoomId} onValueChange={(value) => setFilterRoomId(value || '')}>
             <SelectTrigger id="room-filter" className="text-slate-700">
-              <SelectValue placeholder="Tutte le sale" />
+              <SelectValue>
+                {filterRoomId ? getRoomById(filterRoomId)?.name : 'Tutte le sale'}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="">Tutte le sale</SelectItem>
@@ -92,11 +94,13 @@ export default function AdminBookingOverview() {
 
         <div className="space-y-2">
           <Label htmlFor="user-filter" className="text-slate-700 font-semibold">
-            Filtra per Utente
+            Utente
           </Label>
           <Select value={filterUserId} onValueChange={(value) => setFilterUserId(value || '')}>
             <SelectTrigger id="user-filter" className="text-slate-700">
-              <SelectValue placeholder="Tutti gli utenti" />
+              <SelectValue>
+                {filterUserId ? getUserById(filterUserId)?.name : 'Tutti gli utenti'}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="">Tutti gli utenti</SelectItem>

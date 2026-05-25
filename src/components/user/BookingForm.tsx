@@ -163,7 +163,7 @@ export default function BookingForm({
         {/* Room Selection */}
         <div className="space-y-2">
           <Label htmlFor="room" className="text-slate-700 font-semibold">
-            Sala
+            Room
           </Label>
           <Select value={selectedRoom} onValueChange={(value) => setSelectedRoom(value || 'room-1')}>
             <SelectTrigger id="room" className="text-slate-700">
