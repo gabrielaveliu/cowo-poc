@@ -1,0 +1,26 @@
+import { bookingAPI } from '@/api-lib';
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const deleted = bookingAPI.deleteBooking(id);
+
+    if (!deleted) {
+      return NextResponse.json(
+        { error: 'Booking not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Failed to delete booking' },
+      { status: 500 }
+    );
+  }
+}
