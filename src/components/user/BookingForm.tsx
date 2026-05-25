@@ -64,6 +64,8 @@ export default function BookingForm({
     return new Date().toISOString().split('T')[0];
   };
 
+  const selectedRoomLabel = ROOMS.find((room) => room.id === selectedRoom)?.name ?? 'Seleziona una sala';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
@@ -155,7 +157,9 @@ export default function BookingForm({
           </Label>
           <Select value={selectedRoom} onValueChange={(value) => setSelectedRoom(value || 'room-1')}>
             <SelectTrigger id="room" className="text-slate-700">
-              <SelectValue placeholder="Seleziona una sala" />
+              <SelectValue placeholder="Seleziona una sala">
+                {selectedRoomLabel}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {ROOMS.map((room: Room) => (
