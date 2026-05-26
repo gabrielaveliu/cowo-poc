@@ -1,11 +1,5 @@
-import {
-  mockBookings,
-  mockPricing,
-  DEFAULT_PRICING,
-  ROOMS,
-  mockUsers,
-} from './mockData';
-import { User, MonthlyBillingReport } from '../types';
+import { db } from './database';
+import { Room } from '../types';
 
 // Get current month in YYYY-MM format
 export const getCurrentMonth = (): string => {
@@ -27,12 +21,6 @@ export const getAvailableMonths = (): string[] => {
   return months;
 };
 
-// Get pricing for current month
-export const getCurrentMonthPricing = (): Record<string, number> => {
-  const month = getCurrentMonth();
-  return mockPricing[month] || DEFAULT_PRICING;
-};
-
 // Calculate booking cost
 export const calculateBookingCost = (
   roomId: string,
@@ -52,31 +40,23 @@ export const calculateBookingCost = (
   return durationHours * pricePerHour;
 };
 
-// Check if time slot is available
+// Check if time slot is available (queries the SQLite DB)
 export const isTimeSlotAvailable = (
   roomId: string,
   date: string,
   startTime: string,
   endTime: string
 ): boolean => {
-  const [startH, startM] = startTime.split(':').map(Number);
-  const [endH, endM] = endTime.split(':').map(Number);
-  const startMinutes = startH * 60 + startM;
-  const endMinutes = endH * 60 + endM;
+  const row = db
+    .prepare(
+      `SELECT COUNT(*) AS cnt
+       FROM bookings
+       WHERE room_id = ? AND date = ?
+         AND start_time < ? AND end_time > ?`
+    )
+    .get(roomId, date, endTime, startTime) as { cnt: number };
 
-  return !mockBookings.some((booking) => {
-    if (booking.roomId !== roomId || booking.date !== date) {
-      return false;
-    }
-
-    const [bookH, bookM] = booking.startTime.split(':').map(Number);
-    const [endBookH, endBookM] = booking.endTime.split(':').map(Number);
-    const bookingStart = bookH * 60 + bookM;
-    const bookingEnd = endBookH * 60 + endBookM;
-
-    // Check for overlap
-    return startMinutes < bookingEnd && endMinutes > bookingStart;
-  });
+  return row.cnt === 0;
 };
 
 // Format date to locale string
@@ -94,49 +74,8 @@ export const formatTimeRange = (startTime: string, endTime: string): string => {
   return `${startTime} - ${endTime}`;
 };
 
-// Get room by ID
-export const getRoomById = (roomId: string) => {
-  return ROOMS.find((room) => room.id === roomId);
-};
-
-// Get user by ID
-export const getUserById = (userId: string): User | undefined => {
-  return mockUsers.find((user) => user.id === userId);
-};
-
-// Generate monthly billing report
-export const generateMonthlyBillingReport = (
-  month: string
-): MonthlyBillingReport[] => {
-  const reportMap: Record<
-    string,
-    { bookings: any[]; totalCost: number; user?: User }
-  > = {};
-
-  // Group bookings by user
-  mockBookings.forEach((booking) => {
-    const bookingMonth = booking.date.substring(0, 7);
-    if (bookingMonth === month) {
-      if (!reportMap[booking.userId]) {
-        const user = getUserById(booking.userId);
-        reportMap[booking.userId] = {
-          bookings: [],
-          totalCost: 0,
-          user,
-        };
-      }
-      reportMap[booking.userId].bookings.push(booking);
-      reportMap[booking.userId].totalCost += booking.cost;
-    }
-  });
-
-  // Convert to array
-  return Object.entries(reportMap).map(([userId, data]) => ({
-    userId,
-    userName: data.user?.name || 'Unknown',
-    userEmail: data.user?.email || 'unknown@example.com',
-    month,
-    bookings: data.bookings,
-    totalCost: data.totalCost,
-  }));
+// Get room by ID (queries the SQLite DB)
+export const getRoomById = (roomId: string): Room | undefined => {
+  const row = db.prepare('SELECT * FROM rooms WHERE id = ?').get(roomId) as Room | undefined;
+  return row;
 };
