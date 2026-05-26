@@ -1,7 +1,7 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { mockBookings, mockPricing, DEFAULT_PRICING, ROOMS, mockUsers } from './mockData'
-import { User, MonthlyBillingReport } from '@/types'
+import { Booking, User, MonthlyBillingReport } from '@/types'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -83,6 +83,70 @@ export const isTimeSlotAvailable = (
     return startMinutes < bookingEnd && endMinutes > bookingStart;
   });
 }
+
+export type TimeRange = {
+  startTime: string;
+  endTime: string;
+};
+
+export const getAvailableTimeRanges = (
+  roomId: string,
+  date: string,
+  bookings: Booking[],
+  businessStart = '08:00',
+  businessEnd = '20:00'
+): TimeRange[] => {
+  // Se è la data odierna, considera l'ora attuale
+  let adjustedBusinessStart = businessStart;
+  const today = new Date().toISOString().split('T')[0];
+  if (date === today) {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinutes = now.getMinutes();
+    
+    // Arrotonda all'ora successiva se ci sono minuti
+    const nextHour = currentMinutes > 0 ? currentHour + 1 : currentHour;
+    adjustedBusinessStart = `${String(nextHour).padStart(2, '0')}:00`;
+  }
+
+  const roomBookings = bookings
+    .filter((booking) => booking.roomId === roomId && booking.date === date)
+    .sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+  const getMinutes = (time: string) => {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+
+  const businessStartMinutes = getMinutes(adjustedBusinessStart);
+  const businessEndMinutes = getMinutes(businessEnd);
+  const ranges: TimeRange[] = [];
+
+  let freeStart = businessStartMinutes;
+
+  for (const booking of roomBookings) {
+    const bookingStart = getMinutes(booking.startTime);
+    const bookingEnd = getMinutes(booking.endTime);
+
+    if (bookingStart > freeStart) {
+      ranges.push({
+        startTime: `${String(Math.floor(freeStart / 60)).padStart(2, '0')}:${String(freeStart % 60).padStart(2, '0')}`,
+        endTime: `${String(Math.floor(bookingStart / 60)).padStart(2, '0')}:${String(bookingStart % 60).padStart(2, '0')}`,
+      });
+    }
+
+    freeStart = Math.max(freeStart, bookingEnd);
+  }
+
+  if (freeStart < businessEndMinutes) {
+    ranges.push({
+      startTime: `${String(Math.floor(freeStart / 60)).padStart(2, '0')}:${String(freeStart % 60).padStart(2, '0')}`,
+      endTime: `${String(Math.floor(businessEndMinutes / 60)).padStart(2, '0')}:${String(businessEndMinutes % 60).padStart(2, '0')}`,
+    });
+  }
+
+  return ranges;
+};
 
 // Format date to locale string
 export const formatDateToLocaleString = (dateString: string): string => {

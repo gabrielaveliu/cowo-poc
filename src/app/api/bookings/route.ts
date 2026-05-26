@@ -5,12 +5,18 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    const roomId = searchParams.get('roomId');
+    const date = searchParams.get('date');
 
-    let bookings;
+    let bookings = bookingAPI.getAllBookings();
     if (userId) {
-      bookings = bookingAPI.getUserBookings(userId);
-    } else {
-      bookings = bookingAPI.getAllBookings();
+      bookings = bookings.filter((b) => b.userId === userId);
+    }
+    if (roomId) {
+      bookings = bookings.filter((b) => b.roomId === roomId);
+    }
+    if (date) {
+      bookings = bookings.filter((b) => b.date === date);
     }
 
     return NextResponse.json(bookings);

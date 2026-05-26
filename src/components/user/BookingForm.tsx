@@ -15,8 +15,10 @@ import {
 } from '@/components/ui/select';
 import {
   calculateBookingCost,
+  getAvailableTimeRanges,
   getMonthFromDate,
   isTimeSlotAvailable,
+  TimeRange,
 } from '@/lib/utils';
 import { apiClient } from '@/lib/api';
 
@@ -33,6 +35,7 @@ export default function BookingForm({
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [startTime, setStartTime] = useState<string>('09:00');
   const [endTime, setEndTime] = useState<string>('10:00');
+  const [availableSlots, setAvailableSlots] = useState<TimeRange[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{
     type: 'success' | 'error';
@@ -60,6 +63,29 @@ export default function BookingForm({
     loadPricing();
   }, [selectedDate]);
 
+  useEffect(() => {
+    if (!selectedDate || !selectedRoom) {
+      setAvailableSlots([]);
+      return;
+    }
+
+    const loadAvailability = async () => {
+      try {
+        const bookings = await apiClient.getBookings({
+          roomId: selectedRoom,
+          date: selectedDate,
+        });
+
+        setAvailableSlots(getAvailableTimeRanges(selectedRoom, selectedDate, bookings));
+      } catch (error) {
+        console.error('Error fetching availability:', error);
+        setAvailableSlots([]);
+      }
+    };
+
+    loadAvailability();
+  }, [selectedDate, selectedRoom]);
+
   const estimatedCost = useMemo(() => {
     return calculateBookingCost(selectedRoom, startTime, endTime, pricing);
   }, [selectedRoom, startTime, endTime, pricing]);
@@ -72,6 +98,24 @@ export default function BookingForm({
 
   const getTodayDate = (): string => {
     return new Date().toISOString().split('T')[0];
+  };
+
+  const getMinStartTime = (): string => {
+    const today = getTodayDate();
+    if (selectedDate === today) {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      return `${hours}:${minutes}`;
+    }
+    return '08:00';
+  };
+
+  const getMinEndTime = (): string => {
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const endHours = String(hours).padStart(2, '0');
+    const endMinutes = String(minutes).padStart(2, '0');
+    return `${endHours}:${endMinutes}`;
   };
 
   const selectedRoomLabel = ROOMS.find((room) => room.id === selectedRoom)?.name ?? 'Seleziona una sala';
@@ -196,6 +240,20 @@ export default function BookingForm({
             className="text-slate-700 font-medium"
             required
           />
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-slate-700">
+            <p className="text-sm font-semibold mb-2">Orari disponibili per {selectedRoomLabel} il {selectedDate}</p>
+            {availableSlots.length > 0 ? (
+              <div className="grid gap-2">
+                {availableSlots.map((slot) => (
+                  <div key={`${slot.startTime}-${slot.endTime}`} className="rounded-md bg-white px-3 py-2 shadow-sm border border-slate-200">
+                    {slot.startTime} – {slot.endTime}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500">Nessun orario libero disponibile per questa data e sala.</p>
+            )}
+          </div>
         </div>
 
         {/* Start Time */}
@@ -208,6 +266,8 @@ export default function BookingForm({
             type="time"
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
+            min={getMinStartTime()}
+            max="20:00"
             className="text-slate-700 font-medium"
             required
           />
@@ -223,6 +283,8 @@ export default function BookingForm({
             type="time"
             value={endTime}
             onChange={(e) => setEndTime(e.target.value)}
+            min={getMinEndTime()}
+            max="20:00"
             className="text-slate-700 font-medium"
             required
           />

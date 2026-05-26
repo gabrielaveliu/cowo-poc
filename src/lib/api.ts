@@ -23,6 +23,22 @@ export const apiClient = {
     }
   },
 
+  getBookings: async (params: { userId?: string; roomId?: string; date?: string }) => {
+    try {
+      const query = new URLSearchParams();
+      if (params.userId) query.set('userId', params.userId);
+      if (params.roomId) query.set('roomId', params.roomId);
+      if (params.date) query.set('date', params.date);
+
+      const queryString = query.toString() ? `?${query.toString()}` : '';
+      const response = await fetch(`${API_URL}/api/bookings${queryString}`);
+      return await handleResponse(response);
+    } catch (error) {
+      console.error('[API] getBookings error:', error);
+      throw error;
+    }
+  },
+
   getUserBookings: async (userId: string) => {
     try {
       const response = await fetch(`${API_URL}/api/bookings?userId=${userId}`);
