@@ -170,7 +170,7 @@ export default function AdminBookingOverview() {
                       onClick={() => handleDeleteBooking(booking.id)}
                       variant="destructive"
                       size="sm"
-                      className="text-white font-semibold"
+                      className="text-white font-semibold hover:bg-red-600"
                     >
                       Elimina
                     </Button>
